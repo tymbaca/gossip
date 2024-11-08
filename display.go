@@ -34,7 +34,7 @@ func launchWindow(ctx context.Context) {
 		rl.BeginDrawing()
 		rl.ClearBackground(rl.Black)
 		rl.DrawFPS(10, 10)
-		rl.DrawText("LMB - Pass random data to node\nRMB - Kill/revive the node\n1 - Toggle names\n2 - Toggle peer lists", 10, 35, _infoSize, rl.Gray)
+		rl.DrawText("LMB - Pass random data to node\nRMB - Kill/revive the node\n'1' - Toggle names\n'2' - Toggle peer lists\n'=' - Add new node\n'-' - Remove random node", 10, 35, _infoSize, rl.Gray)
 
 		mu.Lock()
 		positions := CircleLayout(len(peers), float64(rl.Lerp(100, _winHeight, float32(len(peers))/100)), _winWidth/2, _winHeight/2)
