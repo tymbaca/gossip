@@ -16,8 +16,8 @@ import (
 )
 
 const (
-	_winWidth    = 1200
-	_winHeight   = 1000
+	_winWidth    = 800
+	_winHeight   = 600
 	_nodeRadius  = 20
 	_textSize    = 20
 	_addrSize    = 8
