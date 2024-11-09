@@ -4,17 +4,17 @@ import (
 	"context"
 
 	"github.com/brianvoe/gofakeit/v7"
-	"github.com/tymbaca/study/gossip/peer"
+	"github.com/tymbaca/study/gossip/nodes"
 )
 
-func ChoosePeer() *peer.Peer {
+func ChoosePeer() *nodes.Node {
 	mu.RLock()
 	defer mu.RUnlock()
 
 	return choosePeer()
 }
 
-func choosePeer() *peer.Peer {
+func choosePeer() *nodes.Node {
 	for _, peer := range peers {
 		return peer
 	}
@@ -37,7 +37,7 @@ func spawnPeer(ctx context.Context) {
 		randomPeer.AddPeer("", newAddr)
 	}
 
-	newPeer := peer.New(ctx, newAddr, &mapTransport{})
+	newPeer := nodes.New(ctx, newAddr, &mapTransport{})
 	peers[newAddr] = newPeer
 	go newPeer.Launch(_updateInterval)
 }
@@ -59,28 +59,27 @@ func removePeer() {
 
 type mapTransport struct{}
 
-func (t *mapTransport) SetSheeps(sender string, addr string, sheeps peer.Sheeps) error {
+func (t *mapTransport) SetSheeps(sender string, addr string, sheeps nodes.Sheeps) error {
 	mu.RLock()
 	defer mu.RUnlock()
 
 	toPeer, ok := peers[addr]
 	if !ok {
-		return peer.ErrRemoved
+		return nodes.ErrRemoved
 	}
 
 	toPeer.HandleSetSheeps(sheeps)
 	return nil
 }
 
-func (t *mapTransport) SetPeers(sender string, addr string, addrs peer.PeersList) error {
+func (t *mapTransport) InterchangePeers(sender string, addr string, addrs nodes.PeersList) (nodes.PeersList, error) {
 	mu.RLock()
 	defer mu.RUnlock()
 
 	toPeer, ok := peers[addr]
 	if !ok {
-		return peer.ErrRemoved
+		return nodes.PeersList{}, nodes.ErrRemoved
 	}
 
-	toPeer.HandleSetPeers(sender, addrs)
-	return nil
+	return toPeer.HandleInterchangePeers(sender, addrs)
 }

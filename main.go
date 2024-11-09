@@ -7,12 +7,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/samber/lo"
-	"github.com/tymbaca/study/gossip/peer"
+	"github.com/tymbaca/study/gossip/nodes"
 )
 
 var (
-	peers = map[string]*peer.Peer{}
+	peers = map[string]*nodes.Node{}
 	mu    = new(sync.RWMutex)
 )
 
@@ -28,15 +27,15 @@ func main() {
 		SpawnPeer(ctx)
 	}
 
-	addrs := lo.Keys(peers)
-	addrsMap := lo.SliceToMap(addrs, func(addr string) (string, struct{}) { return addr, struct{}{} })
-	for key := range peers {
-		peers[key].HandleSetPeers("", peer.Gossip[map[string]struct{}]{Val: addrsMap, Time: time.Now()})
-		go peers[key].Launch(_updateInterval)
-	}
+	// addrs := lo.Keys(peers)
+	// addrsMap := lo.SliceToMap(addrs, func(addr string) (string, struct{}) { return addr, struct{}{} })
+	// for key := range peers {
+	// 	peers[key].HandleInterchangePeers("", nodes.Gossip[map[string]struct{}]{Val: addrsMap, Time: time.Now()})
+	// 	go peers[key].Launch(_updateInterval)
+	// } // WARN:
 
 	entry := ChoosePeer()
-	entry.HandleSetSheeps(peer.Gossip[int]{Val: 10, Time: time.Now()})
+	entry.HandleSetSheeps(nodes.Gossip[int]{Val: 10, Time: time.Now()})
 
 	// go func() {
 	// 	for range time.Tick(1500 * time.Millisecond) {

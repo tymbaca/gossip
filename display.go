@@ -11,7 +11,7 @@ import (
 
 	rl "github.com/gen2brain/raylib-go/raylib"
 	"github.com/samber/lo"
-	"github.com/tymbaca/study/gossip/peer"
+	"github.com/tymbaca/study/gossip/nodes"
 	"golang.org/x/exp/rand"
 )
 
@@ -26,6 +26,7 @@ const (
 )
 
 func launchWindow(ctx context.Context) {
+	rl.SetConfigFlags(rl.FlagWindowResizable)
 	rl.InitWindow(_winWidth, _winHeight, "gossip")
 	defer rl.CloseWindow()
 	rl.SetTargetFPS(60)
@@ -36,6 +37,7 @@ func launchWindow(ctx context.Context) {
 		rl.DrawFPS(10, 10)
 		rl.DrawText("LMB - Pass random data to node\nRMB - Kill/revive the node\n'1' - Toggle names\n'2' - Toggle peer lists\n'=' - Add new node\n'-' - Remove random node", 10, 35, _infoSize, rl.Gray)
 
+		// TODO window resize - get window size
 		mu.Lock()
 		positions := CircleLayout(len(peers), float64(rl.Lerp(100, _winHeight, float32(len(peers))/100)), _winWidth/2, _winHeight/2)
 		addrs := lo.Keys(peers)
@@ -52,7 +54,7 @@ func launchWindow(ctx context.Context) {
 			}
 
 			if rl.IsMouseButtonPressed(rl.MouseButtonLeft) {
-				clicked.HandleSetSheeps(peer.Gossip[int]{Val: rand.Intn(100), Time: time.Now()})
+				clicked.HandleSetSheeps(nodes.Gossip[int]{Val: rand.Intn(100), Time: time.Now()})
 			}
 		}
 
@@ -78,7 +80,7 @@ func launchWindow(ctx context.Context) {
 	}
 }
 
-func getClickedPeer(allPeers map[string]*peer.Peer, addrs []string, positions []Vector2) *peer.Peer {
+func getClickedPeer(allPeers map[string]*nodes.Node, addrs []string, positions []Vector2) *nodes.Node {
 	if !rl.IsMouseButtonPressed(rl.MouseButtonLeft) && !rl.IsMouseButtonPressed(rl.MouseButtonRight) {
 		return nil
 	}
@@ -97,7 +99,7 @@ var (
 	_drawInfo  = true
 )
 
-func drawNodes(allPeers map[string]*peer.Peer, addrs []string, positions []Vector2) {
+func drawNodes(allPeers map[string]*nodes.Node, addrs []string, positions []Vector2) {
 	for i, addr := range addrs {
 		peer := allPeers[addr]
 		pos := positions[i]
@@ -116,7 +118,7 @@ func drawNodes(allPeers map[string]*peer.Peer, addrs []string, positions []Vecto
 	}
 }
 
-func drawLinks(allPeers map[string]*peer.Peer, addrs []string, positions []Vector2) {
+func drawLinks(allPeers map[string]*nodes.Node, addrs []string, positions []Vector2) {
 	for i, addr := range addrs {
 		from := rl.Vector2(positions[i])
 		this := allPeers[addr]
@@ -141,7 +143,7 @@ func drawLinks(allPeers map[string]*peer.Peer, addrs []string, positions []Vecto
 	}
 }
 
-func getColor(peer *peer.Peer) rl.Color {
+func getColor(peer *nodes.Node) rl.Color {
 	if !peer.IsAlive() {
 		return rl.NewColor(70, 10, 15, 255)
 	}
