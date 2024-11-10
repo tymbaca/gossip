@@ -11,8 +11,8 @@ import (
 )
 
 var (
-	peers = map[string]*nodes.Node{}
-	mu    = new(sync.RWMutex)
+	_allNodes = map[string]*nodes.Node{}
+	_mu       = new(sync.RWMutex)
 )
 
 const (

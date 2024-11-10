@@ -39,17 +39,17 @@ func launchWindow(ctx context.Context) {
 		rl.DrawText(fmt.Sprintf("Request count: %d (RPS: %0.2f)", _reqCount.Load(), _rps), 10, 10, _infoSize, rl.Gray)
 
 		// TODO window resize - get window size
-		mu.Lock()
-		positions := CircleLayout(len(peers), float64(rl.Lerp(100, _winHeight, float32(len(peers))/100)), _winWidth/2, _winHeight/2)
-		addrs := lo.Keys(peers)
+		_mu.Lock()
+		positions := CircleLayout(len(_allNodes), float64(rl.Lerp(100, _winHeight, float32(len(_allNodes))/100)), _winWidth/2, _winHeight/2)
+		addrs := lo.Keys(_allNodes)
 		slices.Sort(addrs)
 
 		// Draw links
-		drawLinks(peers, addrs, positions)
+		drawLinks(_allNodes, addrs, positions)
 
-		drawNodes(peers, addrs, positions)
+		drawNodes(_allNodes, addrs, positions)
 
-		if clicked := getClickedPeer(peers, addrs, positions); clicked != nil {
+		if clicked := getClickedPeer(_allNodes, addrs, positions); clicked != nil {
 			if rl.IsMouseButtonPressed(rl.MouseButtonRight) {
 				clicked.ToggleDead()
 			}
@@ -64,7 +64,7 @@ func launchWindow(ctx context.Context) {
 		}
 
 		if rl.IsKeyPressed(rl.KeyMinus) {
-			removePeer()
+			removePeer(_allNodes, addrs)
 		}
 
 		if rl.IsKeyPressed(rl.KeyOne) {
@@ -75,7 +75,7 @@ func launchWindow(ctx context.Context) {
 			_drawInfo = !_drawInfo
 		}
 
-		mu.Unlock()
+		_mu.Unlock()
 
 		rl.EndDrawing()
 	}

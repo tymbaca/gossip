@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/gob"
-	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -23,7 +22,7 @@ var (
 )
 
 const (
-	_removedTTL = 20 * time.Second
+	_removedTTL = 10 * time.Second
 )
 
 type Node struct {
@@ -64,10 +63,23 @@ func (n *Node) Launch(interval time.Duration) {
 	t := time.NewTicker(interval)
 	defer t.Stop()
 
-	go n.clean()
+	go n.clean() // FIX: see notes.md
+
+	go func() {
+		// ensure that we have our addr in peers list
+		for range time.Tick(1 * time.Second) {
+			n.mu.Lock()
+			n.peers[n.me] = Gossip[Peer]{Val: Peer{Addr: n.me}, UpdateTime: time.Now()}
+			n.mu.Unlock()
+		}
+	}()
 
 	for {
 		for addr, peer := range n.GetPeers() {
+			if n.dead {
+				<-t.C
+				continue
+			}
 			if addr == n.me {
 				continue
 			}
@@ -80,25 +92,26 @@ func (n *Node) Launch(interval time.Duration) {
 				return
 			}
 
-			if err := n.transport.SetSheeps(n.me, addr, n.sheeps); errors.Is(err, ErrRemoved) {
-				n.MarkRemoved(addr)
-				continue
-			} else if err != nil {
+			if err := n.transport.SetSheeps(n.me, addr, n.sheeps); err != nil {
 				logger.Errorf("can't interchange sheeps: %s", err)
+				n.MarkRemoved(addr) // maybe we need few retries before this happens
 				continue
 			}
 
 			hisPeers, err := n.transport.InterchangePeers(n.me, addr, n.GetPeers())
-			if errors.Is(err, ErrRemoved) {
-				n.MarkRemoved(addr)
-				continue
-			} else if err != nil {
+			if err != nil {
 				logger.Errorf("can't interchange peers: %s", err)
+				n.MarkRemoved(addr)
 				continue
 			}
 
 			n.mu.Lock()
-			n.updatePeers(hisPeers)
+			{
+				n.updatePeers(hisPeers)
+				// we know that this peer is alive - so we update it's gossip time
+				peer.UpdateTime = time.Now()
+				n.peers[addr] = peer
+			}
 			n.mu.Unlock()
 
 			<-t.C
@@ -212,7 +225,15 @@ func (n *Node) MarkRemoved(addr string) {
 		return
 	}
 
+	// we don't need to update it if it's already removed
+	// otherwise we will have dangling removed that will not reach their TTL
+	// and will not be deleted from peer list
+	// if peer.Val.Removed {
+	// 	return
+	// }
+
 	peer.Val.Removed = true
+	peer.UpdateTime = time.Now()
 	n.peers[addr] = peer
 }
 
@@ -294,6 +315,7 @@ func (n *Node) getRandomPeer() string {
 }
 
 func (n *Node) clean() {
+	// TODO: ctx context.Context
 	for range time.Tick(10 * time.Second) {
 		n.mu.Lock()
 		n.cleanOldRemovedPeers()

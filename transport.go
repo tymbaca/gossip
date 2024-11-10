@@ -36,11 +36,11 @@ func countRPS() {
 type mapTransport struct{}
 
 func (t *mapTransport) SetSheeps(sender string, addr string, sheeps nodes.Sheeps) error {
-	mu.RLock()
-	defer mu.RUnlock()
+	_mu.RLock()
+	defer _mu.RUnlock()
 	_reqCount.Add(1)
 
-	toPeer, ok := peers[addr]
+	toPeer, ok := _allNodes[addr]
 	if !ok {
 		return nodes.ErrRemoved
 	}
@@ -50,11 +50,11 @@ func (t *mapTransport) SetSheeps(sender string, addr string, sheeps nodes.Sheeps
 }
 
 func (t *mapTransport) InterchangePeers(sender string, addr string, addrs nodes.PeersList) (nodes.PeersList, error) {
-	mu.RLock()
-	defer mu.RUnlock()
+	_mu.RLock()
+	defer _mu.RUnlock()
 	_reqCount.Add(1)
 
-	toPeer, ok := peers[addr]
+	toPeer, ok := _allNodes[addr]
 	if !ok {
 		return nodes.PeersList{}, nodes.ErrRemoved
 	}

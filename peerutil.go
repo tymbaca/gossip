@@ -8,14 +8,14 @@ import (
 )
 
 func ChoosePeer() *nodes.Node {
-	mu.RLock()
-	defer mu.RUnlock()
+	_mu.RLock()
+	defer _mu.RUnlock()
 
 	return choosePeer()
 }
 
 func choosePeer() *nodes.Node {
-	for _, peer := range peers {
+	for _, peer := range _allNodes {
 		return peer
 	}
 
@@ -23,8 +23,8 @@ func choosePeer() *nodes.Node {
 }
 
 func SpawnPeer(ctx context.Context) {
-	mu.Lock()
-	defer mu.Unlock()
+	_mu.Lock()
+	defer _mu.Unlock()
 
 	spawnPeer(ctx)
 }
@@ -38,20 +38,21 @@ func spawnPeer(ctx context.Context) {
 	}
 
 	newPeer := nodes.New(ctx, newAddr, &mapTransport{})
-	peers[newAddr] = newPeer
+	_allNodes[newAddr] = newPeer
 	go newPeer.Launch(_updateInterval)
 }
 
-func RemovePeer() {
-	mu.Lock()
-	defer mu.Unlock()
+// func RemovePeer(allNodes map[string]*nodes.Node, addrs []string) {
+// 	_mu.Lock()
+// 	defer _mu.Unlock()
+//
+// 	removePeer(allNodes, addrs)
+// }
 
-	removePeer()
-}
-
-func removePeer() {
-	for addr, peer := range peers {
-		delete(peers, addr)
+func removePeer(allNodes map[string]*nodes.Node, addrs []string) {
+	for _, addr := range addrs {
+		peer := allNodes[addr]
+		delete(_allNodes, addr)
 		peer.Stop()
 		break
 	}
