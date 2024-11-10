@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/brianvoe/gofakeit/v7"
+	"github.com/tymbaca/study/gossip/logger"
 	"github.com/tymbaca/study/gossip/nodes"
 )
 
@@ -31,6 +32,18 @@ func SpawnPeer(ctx context.Context) {
 
 func spawnPeer(ctx context.Context) {
 	newAddr := gofakeit.Noun()
+	// retrying until get unique value
+	// (if we just replace with non-unique value - old node with that name
+	// will run infinitly in background)
+	for {
+		_, ok := _allNodes[newAddr]
+		if !ok {
+			break
+		}
+
+		logger.Warnf("%s addr already exists, trying againg", newAddr)
+		newAddr = gofakeit.Noun()
+	}
 
 	randomPeer := choosePeer()
 	if randomPeer != nil {
@@ -38,6 +51,7 @@ func spawnPeer(ctx context.Context) {
 	}
 
 	newPeer := nodes.New(ctx, newAddr, &mapTransport{})
+
 	_allNodes[newAddr] = newPeer
 	go newPeer.Launch(_updateInterval)
 }
