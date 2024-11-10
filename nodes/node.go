@@ -63,7 +63,7 @@ func (n *Node) Launch(interval time.Duration) {
 	t := time.NewTicker(interval)
 	defer t.Stop()
 
-	go n.clean() // FIX: see notes.md
+	go n.clean(n.ctx) // FIX: see notes.md
 
 	go func() {
 		// ensure that we have our addr in peers list
@@ -225,9 +225,9 @@ func (n *Node) MarkRemoved(addr string) {
 		return
 	}
 
-	// we don't need to update it if it's already removed
-	// otherwise we will have dangling removed that will not reach their TTL
-	// and will not be deleted from peer list
+	// // we don't need to update it if it's already removed
+	// // otherwise we will have dangling removed that will not reach their TTL
+	// // and will not be deleted from peer list
 	// if peer.Val.Removed {
 	// 	return
 	// }
@@ -314,9 +314,12 @@ func (n *Node) getRandomPeer() string {
 	return n.me
 }
 
-func (n *Node) clean() {
+func (n *Node) clean(ctx context.Context) {
 	// TODO: ctx context.Context
 	for range time.Tick(10 * time.Second) {
+		if ctx.Err() != nil {
+			return
+		}
 		n.mu.Lock()
 		n.cleanOldRemovedPeers()
 		n.mu.Unlock()
