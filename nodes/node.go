@@ -23,7 +23,7 @@ var (
 )
 
 const (
-	_removedTTL = 5 * time.Second
+	_removedTTL = 20 * time.Second
 )
 
 type Node struct {
@@ -179,10 +179,14 @@ func (n *Node) HandleInterchangePeers(sender string, newPeers PeersList) (PeersL
 }
 
 func (n *Node) updatePeers(newPeers PeersList) {
-	// TODO: if i get peer with Removed == true and this node doesn't have
-	// have that peer - we don't add it to our peer list
-
 	for addr, peer := range newPeers {
+		// if i get peer with Removed == true and this node doesn't have
+		// have that peer - we don't add it to our peer list
+		_, ok := n.peers[addr]
+		if peer.Val.Removed && !ok {
+			continue
+		}
+
 		if n.peers[addr].UpdateTime.Before(peer.UpdateTime) {
 			n.peers[addr] = peer
 		}
@@ -290,7 +294,7 @@ func (n *Node) getRandomPeer() string {
 }
 
 func (n *Node) clean() {
-	for range time.Tick(1 * time.Second) {
+	for range time.Tick(10 * time.Second) {
 		n.mu.Lock()
 		n.cleanOldRemovedPeers()
 		n.mu.Unlock()
