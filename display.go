@@ -2,11 +2,11 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"image/color"
 	"math"
 	"slices"
 	"strconv"
-	"strings"
 	"time"
 
 	rl "github.com/gen2brain/raylib-go/raylib"
@@ -34,8 +34,9 @@ func launchWindow(ctx context.Context) {
 	for !rl.WindowShouldClose() {
 		rl.BeginDrawing()
 		rl.ClearBackground(rl.Black)
-		rl.DrawFPS(10, 10)
+		// rl.DrawFPS(10, 10)
 		rl.DrawText("LMB - Pass random data to node\nRMB - Kill/revive the node\n'1' - Toggle names\n'2' - Toggle peer lists\n'=' - Add new node\n'-' - Remove random node", 10, 35, _infoSize, rl.Gray)
+		rl.DrawText(fmt.Sprintf("Request count: %d (RPS: %0.2f)", _reqCount.Load(), _rps), 10, 10, _infoSize, rl.Gray)
 
 		// TODO window resize - get window size
 		mu.Lock()
@@ -54,7 +55,7 @@ func launchWindow(ctx context.Context) {
 			}
 
 			if rl.IsMouseButtonPressed(rl.MouseButtonLeft) {
-				clicked.HandleSetSheeps(nodes.Gossip[int]{Val: rand.Intn(100), Time: time.Now()})
+				clicked.HandleSetSheeps(nodes.Gossip[int]{Val: rand.Intn(100), UpdateTime: time.Now()})
 			}
 		}
 
@@ -106,14 +107,27 @@ func drawNodes(allPeers map[string]*nodes.Node, addrs []string, positions []Vect
 
 		rl.DrawCircleV(rl.Vector2(pos), _nodeRadius, getColor(peer))
 		rl.DrawText(strconv.Itoa(peer.GetSheeps()), int32(pos.X)-10, int32(pos.Y-10), _textSize, rl.Black)
-		hisPeers := peer.GetPeersList()
+		hisPeers := peer.GetPeers()
+		hisPeersList := peer.GetPeersList()
 
 		if _drawAddrs {
-			rl.DrawText(addr, int32(pos.X)+10, int32(pos.Y+20), _addrSize, rl.DarkGreen)
+			rl.DrawText(addr, int32(pos.X)+10, int32(pos.Y+20), _addrSize, rl.Green)
 		}
-
 		if _drawInfo {
-			rl.DrawText(strings.Join(hisPeers, "\n"), int32(pos.X)+10, int32(pos.Y+25+_addrSize), _infoSize, rl.DarkBrown)
+			y := int32(pos.Y + 25 + _addrSize)
+			for _, addr := range hisPeersList {
+				peer, ok := hisPeers[addr]
+				if !ok {
+					continue
+				}
+
+				if !peer.Val.Removed {
+					rl.DrawText(addr, int32(pos.X)+10, y, _infoSize, rl.DarkGreen)
+				} else {
+					rl.DrawText(addr, int32(pos.X)+10, y, _infoSize, rl.DarkBrown)
+				}
+				y += _infoSize + 3
+			}
 		}
 	}
 }

@@ -16,7 +16,7 @@ var (
 )
 
 const (
-	_updateInterval = 300 * time.Millisecond
+	_updateInterval = 500 * time.Millisecond
 )
 
 func main() {
@@ -35,7 +35,7 @@ func main() {
 	// } // WARN:
 
 	entry := ChoosePeer()
-	entry.HandleSetSheeps(nodes.Gossip[int]{Val: 10, Time: time.Now()})
+	entry.HandleSetSheeps(nodes.Gossip[int]{Val: 10, UpdateTime: time.Now()})
 
 	// go func() {
 	// 	for range time.Tick(1500 * time.Millisecond) {
@@ -57,5 +57,6 @@ func main() {
 
 	//--------------------------------------------------------------------------------------------------
 
+	go countRPS()
 	launchWindow(ctx)
 }

@@ -56,30 +56,3 @@ func removePeer() {
 		break
 	}
 }
-
-type mapTransport struct{}
-
-func (t *mapTransport) SetSheeps(sender string, addr string, sheeps nodes.Sheeps) error {
-	mu.RLock()
-	defer mu.RUnlock()
-
-	toPeer, ok := peers[addr]
-	if !ok {
-		return nodes.ErrRemoved
-	}
-
-	toPeer.HandleSetSheeps(sheeps)
-	return nil
-}
-
-func (t *mapTransport) InterchangePeers(sender string, addr string, addrs nodes.PeersList) (nodes.PeersList, error) {
-	mu.RLock()
-	defer mu.RUnlock()
-
-	toPeer, ok := peers[addr]
-	if !ok {
-		return nodes.PeersList{}, nodes.ErrRemoved
-	}
-
-	return toPeer.HandleInterchangePeers(sender, addrs)
-}

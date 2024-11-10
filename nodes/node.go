@@ -22,6 +22,10 @@ var (
 	ErrDown    = fmt.Errorf("node is temporarily down")
 )
 
+const (
+	_removedTTL = 5 * time.Second
+)
+
 type Node struct {
 	me     string
 	ctx    context.Context
@@ -44,8 +48,8 @@ func New(ctx context.Context, addr string, transport transport) *Node {
 		transport: transport,
 		peers: map[string]Gossip[Peer]{
 			addr: {
-				Val:  Peer{Addr: addr},
-				Time: time.Now(),
+				Val:        Peer{Addr: addr},
+				UpdateTime: time.Now(),
 			},
 		},
 	}
@@ -60,9 +64,15 @@ func (n *Node) Launch(interval time.Duration) {
 	t := time.NewTicker(interval)
 	defer t.Stop()
 
+	go n.clean()
+
 	for {
-		for addr := range n.GetPeers() {
+		for addr, peer := range n.GetPeers() {
 			if addr == n.me {
+				continue
+			}
+
+			if peer.Val.Removed {
 				continue
 			}
 
@@ -87,7 +97,9 @@ func (n *Node) Launch(interval time.Duration) {
 				continue
 			}
 
+			n.mu.Lock()
 			n.updatePeers(hisPeers)
+			n.mu.Unlock()
 
 			<-t.C
 		}
@@ -134,7 +146,7 @@ func (n *Node) HandleSetSheeps(newSheeps Sheeps) error {
 	n.mu.Lock()
 	defer n.mu.Unlock()
 
-	if n.sheeps.Time.After(newSheeps.Time) {
+	if n.sheeps.UpdateTime.After(newSheeps.UpdateTime) {
 		return nil
 	}
 
@@ -167,8 +179,11 @@ func (n *Node) HandleInterchangePeers(sender string, newPeers PeersList) (PeersL
 }
 
 func (n *Node) updatePeers(newPeers PeersList) {
+	// TODO: if i get peer with Removed == true and this node doesn't have
+	// have that peer - we don't add it to our peer list
+
 	for addr, peer := range newPeers {
-		if n.peers[addr].Time.Before(peer.Time) {
+		if n.peers[addr].UpdateTime.Before(peer.UpdateTime) {
 			n.peers[addr] = peer
 		}
 	}
@@ -179,8 +194,8 @@ func (n *Node) AddPeer(sender, peer string) {
 	defer n.mu.Unlock()
 
 	n.peers[peer] = Gossip[Peer]{
-		Val:  Peer{Addr: peer},
-		Time: time.Now(),
+		Val:        Peer{Addr: peer},
+		UpdateTime: time.Now(),
 	}
 }
 
@@ -225,8 +240,14 @@ func (n *Node) GetPeersList() []string {
 	return n.getPeersList()
 }
 
-func (n *Node) getPeersList() []string { // TODO: filter removed?
-	list := lo.Keys(n.peers)
+func (n *Node) getPeersList() []string {
+	list := make([]string, 0, len(n.peers))
+	for addr := range n.peers {
+		// if !peer.Val.Removed {
+		list = append(list, addr)
+		// }
+	}
+
 	slices.Sort(list)
 
 	return list
@@ -236,7 +257,7 @@ func (n *Node) GetSheepsTime() time.Time {
 	n.mu.RLock()
 	defer n.mu.RUnlock()
 
-	return n.sheeps.Time
+	return n.sheeps.UpdateTime
 }
 
 type (
@@ -251,8 +272,8 @@ type Peer struct {
 }
 
 type Gossip[T any] struct {
-	Val  T
-	Time time.Time
+	Val        T
+	UpdateTime time.Time
 }
 
 func (n *Node) getRandomPeer() string {
@@ -266,6 +287,22 @@ func (n *Node) getRandomPeer() string {
 	}
 
 	return n.me
+}
+
+func (n *Node) clean() {
+	for range time.Tick(1 * time.Second) {
+		n.mu.Lock()
+		n.cleanOldRemovedPeers()
+		n.mu.Unlock()
+	}
+}
+
+func (n *Node) cleanOldRemovedPeers() {
+	for addr, peer := range n.peers {
+		if peer.Val.Removed && time.Since(peer.UpdateTime) > _removedTTL {
+			delete(n.peers, addr)
+		}
+	}
 }
 
 func toBytes[T any](val T) []byte {
