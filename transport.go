@@ -4,7 +4,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/tymbaca/study/gossip/nodes"
+	"github.com/tymbaca/gossip/nodes"
 )
 
 var (

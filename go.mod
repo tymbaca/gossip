@@ -1,4 +1,4 @@
-module github.com/tymbaca/study/gossip
+module github.com/tymbaca/gossip
 
 go 1.22.5
 

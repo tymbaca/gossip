@@ -9,12 +9,9 @@ import (
 	"time"
 
 	"github.com/samber/lo"
-	"github.com/tymbaca/study/gossip/logger"
+	"github.com/tymbaca/gossip/logger"
 	"golang.org/x/exp/slices"
 )
-
-// TODO: we need reverce gossip mechanism: if p1 gossips to p2 and it appears
-// that p2 has newer gossip it must return it to p1.
 
 var (
 	ErrRemoved = fmt.Errorf("node is removed")
@@ -76,11 +73,16 @@ func (n *Node) Launch(interval time.Duration) {
 
 	for {
 		for addr, peer := range n.GetPeers() {
-			if n.dead {
+			n.mu.RLock()
+			dead := n.dead
+			me := n.me
+			n.mu.RUnlock()
+
+			if dead {
 				<-t.C
 				continue
 			}
-			if addr == n.me {
+			if addr == me {
 				continue
 			}
 
@@ -92,7 +94,7 @@ func (n *Node) Launch(interval time.Duration) {
 				return
 			}
 
-			if err := n.transport.SetSheeps(n.me, addr, n.sheeps); err != nil {
+			if err := n.transport.SetSheeps(n.me, addr, n.GetSheeps()); err != nil {
 				logger.Errorf("can't interchange sheeps: %s", err)
 				n.MarkRemoved(addr) // maybe we need few retries before this happens
 				continue
@@ -188,7 +190,7 @@ func (n *Node) HandleInterchangePeers(sender string, newPeers PeersList) (PeersL
 	// }
 	n.updatePeers(newPeers)
 
-	return n.peers, nil
+	return n.getPeersMap(), nil
 }
 
 func (n *Node) updatePeers(newPeers PeersList) {
@@ -237,11 +239,11 @@ func (n *Node) MarkRemoved(addr string) {
 	n.peers[addr] = peer
 }
 
-func (n *Node) GetSheeps() int {
+func (n *Node) GetSheeps() Gossip[int] {
 	n.mu.RLock()
 	defer n.mu.RUnlock()
 
-	return n.sheeps.Val
+	return n.sheeps
 }
 
 func (n *Node) GetPeers() map[string]Gossip[Peer] {

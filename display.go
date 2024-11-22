@@ -11,7 +11,7 @@ import (
 
 	rl "github.com/gen2brain/raylib-go/raylib"
 	"github.com/samber/lo"
-	"github.com/tymbaca/study/gossip/nodes"
+	"github.com/tymbaca/gossip/nodes"
 	"golang.org/x/exp/rand"
 )
 
@@ -36,7 +36,7 @@ func launchWindow(ctx context.Context) {
 		rl.ClearBackground(rl.Black)
 		// rl.DrawFPS(10, 10)
 		rl.DrawText("LMB - Pass random data to node\nRMB - Kill/revive the node\n'1' - Toggle names\n'2' - Toggle peer lists\n'=' - Add new node\n'-' - Remove random node", 10, 35, _infoSize, rl.Gray)
-		rl.DrawText(fmt.Sprintf("Request count: %d (RPS: %0.2f)", _reqCount.Load(), _rps), 10, 10, _infoSize, rl.Gray)
+		rl.DrawText(fmt.Sprintf("Request count: %d (avg. RPS per node: %0.2f)", _reqCount.Load(), _rps/float64(len(_allNodes))), 10, 10, _infoSize, rl.Gray)
 
 		// TODO window resize - get window size
 		_mu.Lock()
@@ -106,7 +106,7 @@ func drawNodes(allPeers map[string]*nodes.Node, addrs []string, positions []Vect
 		pos := positions[i]
 
 		rl.DrawCircleV(rl.Vector2(pos), _nodeRadius, getColor(peer))
-		rl.DrawText(strconv.Itoa(peer.GetSheeps()), int32(pos.X)-10, int32(pos.Y-10), _textSize, rl.Black)
+		rl.DrawText(strconv.Itoa(peer.GetSheeps().Val), int32(pos.X)-10, int32(pos.Y-10), _textSize, rl.Black)
 		hisPeers := peer.GetPeers()
 		hisPeersList := peer.GetPeersList()
 

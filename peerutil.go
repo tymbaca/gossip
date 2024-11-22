@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"github.com/brianvoe/gofakeit/v7"
-	"github.com/tymbaca/study/gossip/logger"
-	"github.com/tymbaca/study/gossip/nodes"
+	"github.com/tymbaca/gossip/logger"
+	"github.com/tymbaca/gossip/nodes"
 )
 
 func ChoosePeer() *nodes.Node {

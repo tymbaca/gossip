@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/tymbaca/study/gossip/nodes"
+	"github.com/tymbaca/gossip/nodes"
 )
 
 var (
@@ -16,7 +16,7 @@ var (
 )
 
 const (
-	_updateInterval = 500 * time.Millisecond
+	_updateInterval = 300 * time.Millisecond
 )
 
 func main() {
