@@ -12,7 +12,7 @@ Or you can run it without cloning the repo:
 go run github.com/tymbaca/gossip@latest
 ```
 
-You can doo stuff with nodes: add them, remove them, toggle them (like if the 
+You can do stuff with nodes: add them, remove them, toggle them (like if the 
 node goes down temporarily) and send a random data to them. Controls are on your 
 screen. Good luck.
 
