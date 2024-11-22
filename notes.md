@@ -16,7 +16,6 @@ States:
 - Active: got update and rapidely pings other nodes. After one iteration (for 
   range n.peers) switches to Passive state
 
-
 ------------------------------------------
 
 TODO: What if the node "1" is removed and marked as removed in all peer lists, but then node "1" added to cluster again?
