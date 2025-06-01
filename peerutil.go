@@ -31,7 +31,7 @@ func SpawnPeer(ctx context.Context) {
 }
 
 func spawnPeer(ctx context.Context) {
-	newAddr := gofakeit.Noun()
+	newAddr := gofakeit.IPv4Address()
 	// retrying until get unique value
 	// (if we just replace with non-unique value - old node with that name
 	// will run infinitly in background)
